@@ -29,3 +29,37 @@ class Neuron(Module):
         kind = "ReLU" if self.nonlin else "Linear"
         return f"{kind}Neuron ({len(self.w)})"
 
+class Layer(Module):
+    def __init__(self , nin , nout , **kwargs):
+        self.neurons = [  Neuron(nin , **kwargs) for _ in range(nout)]
+
+    def __call__(self,x):
+        out = [ neuron(x) for neuron in self.neurons]
+        return out[0] if len(out) == 1 else out
+
+    def parameters(self):
+        return [ p for neuron in self.neurons  for p in neuron.parameters()]
+
+    def __repr__(self):
+        items = ", ".join(str(neuron) for neuron in self.neurons)
+        return f"Layer of [{items}]"
+
+class MLP(Module):
+    def __init__(self, nin , nouts):
+        sizes = [nin] + nouts
+        self.layers = [
+            Layer(sizes[i] ,sizes[i + 1] , nonlin=i != len(nouts) - 1)
+            for i in range(len(nouts))
+        ]
+
+    def __call__(self, x):
+        for layer in self.layers:
+            x = layer(x)
+        return x
+
+    def parameters(self):
+        return [ p for layer in self.layers  for p in layer.parameters()]
+
+    def  __repr__(self):
+        items = ", ".join( (str(layer)) for layer in self.layers)
+        return f"MLP of [{items}]"
